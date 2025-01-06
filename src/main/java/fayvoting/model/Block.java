@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.List;
 
 public class Block {
-    private static final Gson GSON = new Gson();
     private int index;
     private long timestamp;
     private String data;  // AES-encrypted data
@@ -41,7 +40,7 @@ public class Block {
     private String encryptData(List<Vote> votes, SecretKey key) throws Exception {
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, key);
-        byte[] encryptedBytes = cipher.doFinal(GSON.toJson(votes).getBytes());
+        byte[] encryptedBytes = cipher.doFinal(Blockchain.GSON.toJson(votes).getBytes());
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
@@ -61,7 +60,7 @@ public class Block {
     }
 
     public List<Vote> getVotes(SecretKey secretKey) throws Exception {
-        return GSON.fromJson(decryptData(data, secretKey), ArrayList.class);
+        return Blockchain.GSON.fromJson(decryptData(data, secretKey), ArrayList.class);
     }
 
     @Override
