@@ -13,6 +13,7 @@ import fayvoting.repository.UserRepository;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 @SpringBootApplication
 public class FayVoting implements CommandLineRunner{
@@ -33,16 +34,25 @@ public class FayVoting implements CommandLineRunner{
 	public void run(String... args) throws Exception {
 
 		SCHEDULER.schedule(() -> {
-			// Admin
-			User admin = new User();
-			admin.setId(1);
-			admin.setUsername("admin");
-			admin.setName("admin");
-			admin.setPassword("admin");
-			admin.setStudyprogram("Administrator");
-			admin.setRole("ROLE_ADMIN");
-			admin.setStatus("admin");
-			userRepo.save(admin);
+			while (true) {
+				try {
+					// Admin
+					User admin = new User();
+					admin.setId(1);
+					admin.setUsername("admin");
+					admin.setName("admin");
+					admin.setPassword("admin");
+					admin.setStudyprogram("Administrator");
+					admin.setRole("ROLE_ADMIN");
+					admin.setStatus("admin");
+					userRepo.save(admin);
+					break;
+				} catch (Throwable e) {
+					e.printStackTrace();
+					LockSupport.parkNanos("waiting 5 seconds", TimeUnit.SECONDS.toNanos(5L));
+				}
+			}
+			System.out.println("Successfully add user");
 		}, 5L, TimeUnit.SECONDS);
 
 		// Candidates
