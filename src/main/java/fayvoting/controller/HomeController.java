@@ -19,6 +19,8 @@ public class HomeController {
 	{
 		m.addAttribute("title","HOME");
 
+		m.addAttribute("nodename", System.getProperty("node.name", "Node-A"));
+
 		int c1 = canServ.getNumOfVotes("candidate1");
 		int c2 = canServ.getNumOfVotes("candidate2");
 		int c3 = canServ.getNumOfVotes("candidate3");
