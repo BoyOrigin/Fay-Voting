@@ -22,7 +22,7 @@ public class Blockchain implements Serializable {
         loadBlockchain();
     }
 
-    public void addBlock(String voterId, String candidate) {
+    public synchronized void addBlock(String voterId, String candidate) {
         if (results.containsKey(voterId)) {
             System.out.println("Voter has already voted.");
             return;
@@ -34,11 +34,11 @@ public class Blockchain implements Serializable {
         saveBlockchain();
     }
 
-    public List<Block> getChain() {
+    public synchronized List<Block> getChain() {
         return chain;
     }
 
-    public boolean validateBlockchain(List<Block> newChain) {
+    public synchronized boolean validateBlockchain(List<Block> newChain) {
         for (int i = 1; i < newChain.size(); i++) {
             Block current = newChain.get(i);
             Block previous = newChain.get(i - 1);
@@ -49,7 +49,7 @@ public class Blockchain implements Serializable {
         return true;
     }
 
-    public void synchronizeBlockchain(List<Block> newChain) {
+    public synchronized void synchronizeBlockchain(List<Block> newChain) {
         if (newChain.size() > chain.size() && validateBlockchain(newChain)) {
             chain = newChain;
             recalculateResults();
@@ -60,7 +60,7 @@ public class Blockchain implements Serializable {
         }
     }
 
-    private void recalculateResults() {
+    private synchronized void recalculateResults() {
         results.clear();
         for (Block block : chain) {
             if (block.getDecryptedData().startsWith("Voter:")) {
@@ -87,7 +87,7 @@ public class Blockchain implements Serializable {
         }
     }
 
-    private void saveBlockchain() {
+    private synchronized void saveBlockchain() {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
             out.writeObject(chain);
         } catch (IOException e) {
@@ -95,7 +95,7 @@ public class Blockchain implements Serializable {
         }
     }
 
-    private void loadBlockchain() {
+    private synchronized void loadBlockchain() {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
             chain = (List<Block>) in.readObject();
             recalculateResults();
