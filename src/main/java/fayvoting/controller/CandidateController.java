@@ -37,10 +37,10 @@ public class CandidateController {
 		{
 			try {
 				// add a vote to the selectedCandidate
-				Candidate selectedCan = canServ.getCandidateByCandidate(candidate);
-				selectedCan.setVotes(selectedCan.getVotes() + 1);
-				canServ.addCandidate(selectedCan); // update candidate
-				canServ.flush();
+				// Candidate selectedCan = canServ.getCandidateByCandidate(candidate);
+				// selectedCan.setVotes(selectedCan.getVotes() + 1);
+				// canServ.addCandidate(selectedCan); // update candidate
+				// canServ.flush();
 				FayVoting.NODE.getBlockchain().addBlock(String.valueOf(user.getId()), candidate);
 				
 				user.setStatus("Voted");

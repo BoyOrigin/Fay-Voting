@@ -63,7 +63,7 @@ public class PeerToPeerNode {
         try {
             b.connect(address, port).sync();
         } catch (Throwable e) {
-            e.printStackTrace();
+            System.out.println("Trying to connect " + address + ":" + port + "...");
         }
         // System.out.println("Disconnected from " + address + ":" + port + ". Trying to reconnect in 5 seconds...");
         LockSupport.parkNanos("waiting 5 seconds", TimeUnit.SECONDS.toNanos(5L));

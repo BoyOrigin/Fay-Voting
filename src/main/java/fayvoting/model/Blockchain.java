@@ -1,7 +1,6 @@
 package fayvoting.model;
 
 import fayvoting.service.CandidateService;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -10,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Blockchain implements Serializable {
-    private final CandidateService canServ;
+    private transient final CandidateService canServ;
 
     private static final String FILE_NAME = "blockchain.dat";
     private List<Block> chain;
@@ -31,6 +30,7 @@ public class Blockchain implements Serializable {
         Block newBlock = new Block("Voter: " + voterId + " voted for " + candidate, chain.isEmpty() ? "0" : chain.get(chain.size() - 1).hash);
         chain.add(newBlock);
         results.put(candidate, results.getOrDefault(candidate, 0) + 1);
+        recalculateResults();
         saveBlockchain();
     }
 
@@ -56,7 +56,7 @@ public class Blockchain implements Serializable {
             saveBlockchain();
             System.out.println("Blockchain successfully synchronized.");
         } else {
-            // System.out.println("Received blockchain is invalid.");
+            // System.out.println("Received blockchain is invalid. (" + newChain.size() + " > " + chain.size() + ")");
         }
     }
 
