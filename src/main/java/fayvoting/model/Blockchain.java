@@ -1,180 +1,106 @@
 package fayvoting.model;
 
-import com.google.gson.Gson;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
+import fayvoting.service.CandidateService;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.Serializable;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.UUID;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class Blockchain {
-    public static final Gson GSON = new Gson();
+public class Blockchain implements Serializable {
+    @Autowired
+    private CandidateService canServ;
 
-    enum Mode {
-        DISABLE,
-        FULL_SYNC,
-        NEW_BLOCK,
-        READY_TO_SERVICE
-    }
-    private final int port = 20001;
-    private Deque<Block> blocks = new ArrayDeque<>();
-    private Mode mode = Mode.DISABLE;
-    private EventLoopGroup bossGroup = new NioEventLoopGroup();
-    private EventLoopGroup workerGroup = new NioEventLoopGroup();
-    private EventLoopGroup group = new NioEventLoopGroup();
-    private UUID serverId = UUID.randomUUID();
+    private static final String FILE_NAME = "blockchain.dat";
+    private List<Block> chain;
+    private Map<String, Integer> results;
 
     public Blockchain() {
+        this.chain = new ArrayList<>();
+        this.results = new HashMap<>();
+        loadBlockchain();
     }
 
-    public void start() throws InterruptedException {
-        ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel ch) {
-                        ch.pipeline().addLast(new StringDecoder(), new StringEncoder(), new BlockchainServerHandler());
-                    }
-                });
+    public void addBlock(String voterId, String candidate) {
+        if (results.containsKey(voterId)) {
+            System.out.println("Voter has already voted.");
+            return;
+        }
+        Block newBlock = new Block("Voter: " + voterId + " voted for " + candidate, chain.get(chain.size() - 1).hash);
+        chain.add(newBlock);
+        results.put(candidate, results.getOrDefault(candidate, 0) + 1);
+        saveBlockchain();
+    }
 
-        ChannelFuture f = b.bind(port).sync();
-        System.out.println("Server started on port: " + port);
-        f.channel().closeFuture().addListener(future -> {
-            group.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-            if (future.isSuccess()) {
-                System.out.println("Channel closed successfully");
-            } else {
-                System.err.println("Channel close failed");
+    public List<Block> getChain() {
+        return chain;
+    }
+
+    public boolean validateBlockchain(List<Block> newChain) {
+        for (int i = 1; i < newChain.size(); i++) {
+            Block current = newChain.get(i);
+            Block previous = newChain.get(i - 1);
+            if (!current.previousHash.equals(previous.hash) || !current.calculateHash().equals(current.hash)) {
+                return false;
             }
-        });
+        }
+        return true;
     }
 
-    public void connect(String host, int port) {
-        Bootstrap b = new Bootstrap();
-        b.group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new ChannelInitializer<Channel>() {
-                    @Override
-                    protected void initChannel(Channel ch) {
-                        ch.pipeline().addLast(new StringDecoder(), new StringEncoder(), new BlockchainClientHandler());
-                    }
-                });
+    public void synchronizeBlockchain(List<Block> newChain) {
+        if (newChain.size() > chain.size() && validateBlockchain(newChain)) {
+            chain = newChain;
+            recalculateResults();
+            saveBlockchain();
+            System.out.println("Blockchain successfully synchronized.");
+        } else {
+            System.out.println("Received blockchain is invalid.");
+        }
+    }
 
-        ChannelFuture f = b.connect(host, port);
-        f.channel().writeAndFlush("GET_CHAIN");
-        f.channel().closeFuture().addListener(future -> {
-            if (future.isSuccess()) {
-                System.out.println("Channel closed successfully");
-            } else {
-                System.err.println("Channel close failed");
+    private void recalculateResults() {
+        results.clear();
+        for (Block block : chain) {
+            if (block.getDecryptedData().startsWith("Voter:")) {
+                String[] parts = block.getDecryptedData().split(" voted for ");
+                if (parts.length == 2) {
+                    String candidate = parts[1];
+                    results.put(candidate, results.getOrDefault(candidate, 0) + 1);
+                }
             }
-        });
-
-    }
-
-    public static Blockchain init() throws InterruptedException {
-        Blockchain blockchain = new Blockchain();
-        blockchain.start();
-        blockchain.mode = Mode.READY_TO_SERVICE;
-        // blockchain.connect("localhost", 20002);
-        // blockchain.connect("localhost", 20003);
-        // blockchain.connect("localhost", 20004);
-        return blockchain;
-    }
-}
-
-class Packet implements Serializable {
-    private final String channel;
-    private final UUID serverId;
-    private final String data;
-
-    public Packet(String channel, UUID serverId, String data) {
-        this.channel = channel;
-        this.serverId = serverId;
-        this.data = data;
-    }
-
-    public String getChannel() {
-        return channel;
-    }
-
-    public UUID getServerId() {
-        return serverId;
-    }
-
-    public String getData() {
-        return data;
-    }
-}
-
-class BlockchainClientHandler extends SimpleChannelInboundHandler<String> {
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        Packet packet = Blockchain.GSON.fromJson(msg, Packet.class);
-        System.out.println("Response from server id: " + packet.getServerId().toString());
-
-        if (packet.getChannel().equals("FULL_SYNC")) {
-            // Send the entire blockchain
         }
-        else if (packet.getChannel().startsWith("NEW_BLOCK")) {
-            // Receive and validate a new block
+        for (Map.Entry<String, Integer> entry : results.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue() + " votes");
+            Candidate selectedCan = canServ.getCandidateByCandidate(entry.getKey());
+            selectedCan.setVotes(entry.getValue());
+            canServ.addCandidate(selectedCan); // update candidate
         }
-        else {
-            // ctx.writeAndFlush("UNKNOWN_COMMAND");
+        canServ.flush();
+    }
+
+    public void showResults() {
+        System.out.println("Election Results:");
+        for (Map.Entry<String, Integer> entry : results.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue() + " votes");
         }
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        System.out.println("Connection established: " + ctx.channel().remoteAddress());
-        // ctx.writeAndFlush("GET_LAST_BLOCK");  // Request the latest block on connection
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
-    }
-}
-
-class BlockchainServerHandler extends SimpleChannelInboundHandler<String> {
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) {
-        Packet packet = Blockchain.GSON.fromJson(msg, Packet.class);
-        System.out.println("Received from server id: " + packet.getServerId());
-
-        if (packet.getChannel().equals("FULL_SYNC")) {
-            // Send the entire blockchain
-        }
-        else if (packet.getChannel().equals("NEW_BLOCK")) {
-            // Receive and validate a new block
-        }
-        else {
-            // ctx.writeAndFlush("UNKNOWN_COMMAND");
+    private void saveBlockchain() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            out.writeObject(chain);
+        } catch (IOException e) {
+            System.err.println("Error saving blockchain: " + e.getMessage());
         }
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        System.out.println("Connection established: " + ctx.channel().remoteAddress());
-        // ctx.writeAndFlush("GET_LAST_BLOCK");  // Request the latest block on connection
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
+    private void loadBlockchain() {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            chain = (List<Block>) in.readObject();
+            recalculateResults();
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("No existing blockchain found. Starting a new one.");
+        }
     }
 }

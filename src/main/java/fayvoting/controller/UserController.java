@@ -32,7 +32,6 @@ public class UserController {
 			return "redirect:/register";
 		}
 		else{
-			 
 			userServ.addUser(user);
 			session.setAttribute("msg", "Registration successful");
 			return "redirect:/register";

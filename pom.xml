@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com</groupId>
-	<artifactId>MySpring_Boot_aa23v_VotingApp_Final</artifactId>
+	<artifactId>Fay-Voting</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>MySpring_Boot_aa23v_VotingApp_Final</name>
-	<description>Voting App</description>
+	<name>Fay-Voting</name>
+	<description>E-Voting App with Blockchain</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

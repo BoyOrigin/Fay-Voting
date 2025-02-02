@@ -14,10 +14,13 @@ public class CandidateService {
 	@Autowired
 	private CandidateRepository canRepo;
 	
-	public Candidate addCandidate(Candidate can)
+	public synchronized Candidate addCandidate(Candidate can)
 	{
-		
 		return this.canRepo.save(can);
+	}
+
+	public synchronized void flush() {
+		this.canRepo.flush();
 	}
 	
 	
@@ -36,12 +39,12 @@ public class CandidateService {
 		this.canRepo.deleteById( id);
 	}
 	
-	public int getNumOfVotes(String candidate)
+	public synchronized int getNumOfVotes(String candidate)
 	{
 		return this.canRepo.getNumOfVotes(candidate);
 	}
 
-	public Candidate getCandidateByCandidate(String candidate)
+	public synchronized Candidate getCandidateByCandidate(String candidate)
 	{
 		return this.canRepo.getCandidateByCandidate(candidate);
 	}

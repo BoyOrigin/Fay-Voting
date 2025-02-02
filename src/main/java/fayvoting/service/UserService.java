@@ -21,8 +21,8 @@ public class UserService {
 	public User addUser(User user)
 	{
 		user.setRole("ROLE_NORMAL");
-		
-		return this.userRepo.save(user);
+
+		return this.userRepo.saveAndFlush(user);
 	}
 	
 	public List<User> getAllUsers()

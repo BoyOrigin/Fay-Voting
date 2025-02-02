@@ -4,6 +4,7 @@ import java.security.Principal;
 
 import javax.servlet.http.HttpSession;
 
+import fayvoting.FayVoting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,6 +40,8 @@ public class CandidateController {
 				Candidate selectedCan = canServ.getCandidateByCandidate(candidate);
 				selectedCan.setVotes(selectedCan.getVotes() + 1);
 				canServ.addCandidate(selectedCan); // update candidate
+				canServ.flush();
+				FayVoting.NODE.getBlockchain().addBlock(String.valueOf(user.getId()), candidate);
 				
 				user.setStatus("Voted");
 				userServ.addUser(user); // update user
