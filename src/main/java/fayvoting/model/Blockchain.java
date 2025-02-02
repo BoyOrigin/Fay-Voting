@@ -28,7 +28,7 @@ public class Blockchain implements Serializable {
             System.out.println("Voter has already voted.");
             return;
         }
-        Block newBlock = new Block("Voter: " + voterId + " voted for " + candidate, chain.get(chain.size() - 1).hash);
+        Block newBlock = new Block("Voter: " + voterId + " voted for " + candidate, chain.isEmpty() ? "0" : chain.get(chain.size() - 1).hash);
         chain.add(newBlock);
         results.put(candidate, results.getOrDefault(candidate, 0) + 1);
         saveBlockchain();
@@ -56,7 +56,7 @@ public class Blockchain implements Serializable {
             saveBlockchain();
             System.out.println("Blockchain successfully synchronized.");
         } else {
-            System.out.println("Received blockchain is invalid.");
+            // System.out.println("Received blockchain is invalid.");
         }
     }
 

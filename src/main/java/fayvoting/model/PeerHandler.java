@@ -13,7 +13,7 @@ public class PeerHandler extends SimpleChannelInboundHandler<Blockchain> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Blockchain receivedChain) {
         blockchain.synchronizeBlockchain(receivedChain.getChain());
-        System.out.println("Blockchain synchronized with peer.");
+        // System.out.println("Blockchain synchronized with peer.");
     }
 
     @Override
