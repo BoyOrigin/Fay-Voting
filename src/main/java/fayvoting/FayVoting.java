@@ -13,6 +13,7 @@ import fayvoting.repository.CandidateRepository;
 import fayvoting.repository.UserRepository;
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -34,8 +35,12 @@ public class FayVoting implements CommandLineRunner{
 
 	@Override
 	public void run(String... args) throws Exception {
-		NODE.connectToPeer(System.getProperty("netty.connect1", "localhost"), Integer.getInteger("netty.connect1Port", 20002));
-		NODE.connectToPeer(System.getProperty("netty.connect2", "localhost"), Integer.getInteger("netty.connect2Port", 20003));
+		ForkJoinPool.commonPool().execute(() -> {
+			while (true) NODE.connectToPeer(System.getProperty("netty.connect1", "localhost"), Integer.getInteger("netty.connect1Port", 20002));
+		});
+		ForkJoinPool.commonPool().execute(() -> {
+			while (true) NODE.connectToPeer(System.getProperty("netty.connect2", "localhost"), Integer.getInteger("netty.connect2Port", 20003));
+		});
 		/*SCHEDULER.schedule(() -> {
 			while (true) {
 				try {

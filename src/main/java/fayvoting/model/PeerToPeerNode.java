@@ -12,6 +12,9 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 public class PeerToPeerNode {
     private Blockchain blockchain;
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -57,6 +60,12 @@ public class PeerToPeerNode {
                         );
                     }
                 });
-        b.connect(address, port);
+        try {
+            b.connect(address, port).sync();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        System.out.println("Disconnected from " + address + ":" + port + ". Trying to reconnect in 5 seconds...");
+        LockSupport.parkNanos("waiting 5 seconds", TimeUnit.SECONDS.toNanos(5L));
     }
 }
