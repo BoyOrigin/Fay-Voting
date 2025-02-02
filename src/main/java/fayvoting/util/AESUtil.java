@@ -6,7 +6,7 @@ import java.util.Base64;
 
 public class AESUtil {
     private static final String ALGORITHM = "AES";
-    private static final String SECRET_KEY = "0f1d77b646e8ec1b893f9a1a3c682e24"; // 16-byte key
+    private static final String SECRET_KEY = System.getProperty("encryptionKey", "0f1d77b646e8ec1b893f9a1a3c682e24"); // 16-byte key
 
     public static String encrypt(String data) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);

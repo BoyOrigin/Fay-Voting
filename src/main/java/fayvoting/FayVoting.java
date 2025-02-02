@@ -12,14 +12,12 @@ import fayvoting.model.User;
 import fayvoting.repository.CandidateRepository;
 import fayvoting.repository.UserRepository;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 
 @SpringBootApplication
 public class FayVoting implements CommandLineRunner{
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
 
 	public static final PeerToPeerNode NODE = new PeerToPeerNode(Integer.getInteger("netty.bind", 20001), new Blockchain());
 
@@ -35,12 +33,6 @@ public class FayVoting implements CommandLineRunner{
 
 	@Override
 	public void run(String... args) throws Exception {
-		ForkJoinPool.commonPool().execute(() -> {
-			while (true) NODE.connectToPeer(System.getProperty("netty.connect1", "localhost"), Integer.getInteger("netty.connect1Port", 20002));
-		});
-		ForkJoinPool.commonPool().execute(() -> {
-			while (true) NODE.connectToPeer(System.getProperty("netty.connect2", "localhost"), Integer.getInteger("netty.connect2Port", 20003));
-		});
 		/*SCHEDULER.schedule(() -> {
 			while (true) {
 				try {
@@ -61,7 +53,7 @@ public class FayVoting implements CommandLineRunner{
 				}
 			}
 			System.out.println("Successfully add user");
-		}, 5L, TimeUnit.SECONDS);
+		}, 5L, TimeUnit.SECONDS);*/
 
 		// Candidates
 		Candidate candidate1 = new Candidate();
@@ -83,7 +75,14 @@ public class FayVoting implements CommandLineRunner{
 		candidate4.setId(4);
 		candidate4.setCandidate("candidate4");
 		canRepo.save(candidate4);
-		*/
+		canRepo.flush();
+
+		EXECUTOR.execute(() -> {
+			while (true) NODE.connectToPeer(System.getProperty("netty.connect1", "localhost"), Integer.getInteger("netty.connect1Port", 20002));
+		});
+		EXECUTOR.execute(() -> {
+			while (true) NODE.connectToPeer(System.getProperty("netty.connect2", "localhost"), Integer.getInteger("netty.connect2Port", 20003));
+		});
 	}
 	
 
