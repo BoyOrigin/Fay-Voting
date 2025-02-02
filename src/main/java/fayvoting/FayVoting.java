@@ -2,6 +2,7 @@ package fayvoting;
 
 import fayvoting.model.Blockchain;
 import fayvoting.model.PeerToPeerNode;
+import fayvoting.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,7 @@ import java.util.concurrent.locks.LockSupport;
 public class FayVoting implements CommandLineRunner{
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2);
 
-	public static final PeerToPeerNode NODE = new PeerToPeerNode(Integer.getInteger("netty.bind", 20001), new Blockchain());
+	public static PeerToPeerNode NODE;
 
 	public static void main(String[] args) {
 		SpringApplication.run(FayVoting.class, args);
@@ -30,6 +31,9 @@ public class FayVoting implements CommandLineRunner{
 	
 	@Autowired
 	private CandidateRepository canRepo;
+
+	@Autowired
+	private CandidateService canServ;
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -77,6 +81,7 @@ public class FayVoting implements CommandLineRunner{
 		canRepo.save(candidate4);
 		canRepo.flush();
 
+		NODE = new PeerToPeerNode(Integer.getInteger("netty.bind", 20001), new Blockchain(canServ));
 		EXECUTOR.execute(() -> {
 			while (true) NODE.connectToPeer(System.getProperty("netty.connect1", "localhost"), Integer.getInteger("netty.connect1Port", 20002));
 		});
