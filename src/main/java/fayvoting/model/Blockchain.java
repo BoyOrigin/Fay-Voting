@@ -2,6 +2,7 @@ package fayvoting.model;
 
 import fayvoting.service.CandidateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Controller
 public class Blockchain implements Serializable {
     @Autowired
     private CandidateService canServ;
